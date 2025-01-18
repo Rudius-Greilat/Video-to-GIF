@@ -28,8 +28,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var videoPathText: TextView
     private lateinit var progressBar: ProgressBar
 
+    // 添加新的控件变量
+    private lateinit var qualitySeekBar: SeekBar
+    private lateinit var fpsSeekBar: SeekBar
+    private lateinit var qualityText: TextView
+    private lateinit var fpsText: TextView
+
     private var selectedVideoUri: Uri? = null
-    private var quality = 720 // 默认分辨率
+    private var quality = 480 // 默认分辨率
     private var fps = 15 // 默认帧率
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -52,7 +58,7 @@ class MainActivity : AppCompatActivity() {
             )
             selectedVideoUri = it
             videoPathText.text = "已选择视频: ${DocumentFile.fromSingleUri(this, it)?.name}"
-            convertToGifButton.isEnabled = true
+            enableControls(true)
         }
     }
 
@@ -64,7 +70,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        // 创建主布局
         mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
@@ -74,7 +79,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 创建按钮
         selectVideoButton = Button(this).apply {
             text = "选择视频"
             layoutParams = LinearLayout.LayoutParams(
@@ -85,7 +89,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 创建文本显示
         videoPathText = TextView(this).apply {
             text = "未选择视频"
             layoutParams = LinearLayout.LayoutParams(
@@ -96,7 +99,48 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 创建转换按钮
+        // 分辨率控制
+        qualityText = TextView(this).apply {
+            text = "分辨率: ${quality}p"
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        qualitySeekBar = SeekBar(this).apply {
+            max = 1080
+            progress = quality
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+            isEnabled = false
+        }
+
+        // 帧率控制
+        fpsText = TextView(this).apply {
+            text = "帧率: $fps fps"
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        fpsSeekBar = SeekBar(this).apply {
+            max = 30
+            progress = fps
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+            isEnabled = false
+        }
+
         convertToGifButton = Button(this).apply {
             text = "转换为GIF"
             isEnabled = false
@@ -104,11 +148,10 @@ class MainActivity : AppCompatActivity() {
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, 16)
+                setMargins(0, 16, 0, 16)
             }
         }
 
-        // 创建进度条
         progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
@@ -120,11 +163,16 @@ class MainActivity : AppCompatActivity() {
             visibility = View.GONE
         }
 
-        // 添加所有视图到主布局
-        mainLayout.addView(selectVideoButton)
-        mainLayout.addView(videoPathText)
-        mainLayout.addView(convertToGifButton)
-        mainLayout.addView(progressBar)
+        mainLayout.apply {
+            addView(selectVideoButton)
+            addView(videoPathText)
+            addView(qualityText)
+            addView(qualitySeekBar)
+            addView(fpsText)
+            addView(fpsSeekBar)
+            addView(convertToGifButton)
+            addView(progressBar)
+        }
 
         setContentView(mainLayout)
     }
@@ -139,6 +187,30 @@ class MainActivity : AppCompatActivity() {
                 convertToGif(uri)
             } ?: Toast.makeText(this, "请先选择视频", Toast.LENGTH_SHORT).show()
         }
+
+        qualitySeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                quality = if (progress < 120) 120 else progress
+                qualityText.text = "分辨率: ${quality}p"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        fpsSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                fps = if (progress < 5) 5 else progress
+                fpsText.text = "帧率: $fps fps"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+
+    private fun enableControls(enabled: Boolean) {
+        qualitySeekBar.isEnabled = enabled
+        fpsSeekBar.isEnabled = enabled
+        convertToGifButton.isEnabled = enabled
     }
 
     private fun convertToGif(videoUri: Uri) {
@@ -147,7 +219,6 @@ class MainActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 创建临时输入文件
                 val inputFile = File(cacheDir, "temp_input_video")
                 contentResolver.openInputStream(videoUri)?.use { input ->
                     FileOutputStream(inputFile).use { output ->
@@ -156,13 +227,11 @@ class MainActivity : AppCompatActivity() {
                 }
                 progressBar.progress = 30
 
-                // 创建临时输出文件
                 val outputFile = File(cacheDir, "temp_output.gif")
 
-                // FFmpeg命令
                 val command = arrayOf(
                     "-i", inputFile.absolutePath,
-                    "-vf", "fps=$fps,scale=${quality}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
+                    "-vf", buildFFmpegFilter(),
                     "-y",
                     outputFile.absolutePath
                 )
@@ -170,7 +239,6 @@ class MainActivity : AppCompatActivity() {
                 FFmpeg.execute(command)
                 progressBar.progress = 70
 
-                // 保存到媒体库
                 saveToMediaStore(outputFile)
                 progressBar.progress = 90
 
@@ -180,7 +248,6 @@ class MainActivity : AppCompatActivity() {
                     showResultDialog(outputFile)
                 }
 
-                // 清理临时文件
                 inputFile.delete()
                 outputFile.delete()
 
@@ -191,6 +258,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun buildFFmpegFilter(): String {
+        return "fps=$fps,scale=${quality}:-1:flags=lanczos," +
+                "split[s0][s1];" +
+                "[s0]palettegen=max_colors=256:stats_mode=full[p];" +
+                "[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle"
     }
 
     private fun requestPermissions() {
