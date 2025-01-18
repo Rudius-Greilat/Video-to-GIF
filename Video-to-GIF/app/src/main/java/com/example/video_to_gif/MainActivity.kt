@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.example.video_to_gif
 
 import android.Manifest
@@ -10,122 +9,141 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.view.View
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.view.ViewGroup.LayoutParams
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
+import com.arthenica.mobileffmpeg.FFmpeg
+import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.arthenica.mobileffmpeg.FFmpeg
 
 class MainActivity : AppCompatActivity() {
-
+    private lateinit var mainLayout: LinearLayout
     private lateinit var selectVideoButton: Button
     private lateinit var convertToGifButton: Button
     private lateinit var videoPathText: TextView
-    private lateinit var outputPathText: TextView
-    private lateinit var conversionProgressBar: ProgressBar
+    private lateinit var progressBar: ProgressBar
 
     private var selectedVideoUri: Uri? = null
-    private var outputGifPath: String? = null
+    private var quality = 720 // 默认分辨率
+    private var fps = 15 // 默认帧率
 
-    // 请求存储权限
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.all { it.value }) {
-            Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "需要存储权限才能继续", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 视频选择启动器
     private val videoPickerLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            // 获取永久访问权限
             contentResolver.takePersistableUriPermission(
                 it,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
             selectedVideoUri = it
-            videoPathText.text = "Video Selected: ${DocumentFile.fromSingleUri(this, it)?.name}"
+            videoPathText.text = "已选择视频: ${DocumentFile.fromSingleUri(this, it)?.name}"
             convertToGifButton.isEnabled = true
-        } ?: run {
-            videoPathText.text = "No video selected"
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupUI()
+        requestPermissions()
+        setupListeners()
+    }
 
-        // 请求必要的权限
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            requestPermissionLauncher.launch(arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ))
+    private fun setupUI() {
+        // 创建主布局
+        mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT
+            )
         }
 
-        // UI 初始化代码保持不变...
-        // 创建布局容器
-        val layout = LinearLayout(this)
-        layout.orientation = LinearLayout.VERTICAL
-        layout.setPadding(16, 16, 16, 16)
-
-        // 创建按钮、文本框和进度条
+        // 创建按钮
         selectVideoButton = Button(this).apply {
-            text = "Select Video"
+            text = "选择视频"
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
         }
 
-        convertToGifButton = Button(this).apply {
-            text = "Convert to GIF"
-            isEnabled = false // 默认不可用
-        }
-
+        // 创建文本显示
         videoPathText = TextView(this).apply {
-            text = "No video selected"
+            text = "未选择视频"
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
         }
 
-        outputPathText = TextView(this)
-
-        conversionProgressBar = ProgressBar(this).apply {
-            visibility = ProgressBar.GONE // 默认不可见
+        // 创建转换按钮
+        convertToGifButton = Button(this).apply {
+            text = "转换为GIF"
+            isEnabled = false
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
         }
 
-        // 将控件添加到布局中
-        layout.addView(selectVideoButton)
-        layout.addView(videoPathText)
-        layout.addView(convertToGifButton)
-        layout.addView(outputPathText)
-        layout.addView(conversionProgressBar)
+        // 创建进度条
+        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
+            max = 100
+            visibility = View.GONE
+        }
 
-        // 设置主视图
-        setContentView(layout)
-        // 设置按钮点击事件
+        // 添加所有视图到主布局
+        mainLayout.addView(selectVideoButton)
+        mainLayout.addView(videoPathText)
+        mainLayout.addView(convertToGifButton)
+        mainLayout.addView(progressBar)
+
+        setContentView(mainLayout)
+    }
+
+    private fun setupListeners() {
         selectVideoButton.setOnClickListener {
             videoPickerLauncher.launch(arrayOf("video/*"))
         }
 
         convertToGifButton.setOnClickListener {
             selectedVideoUri?.let { uri ->
-                convertVideoToGif(uri)
-            } ?: Toast.makeText(this, "Please select a video first.", Toast.LENGTH_SHORT).show()
+                convertToGif(uri)
+            } ?: Toast.makeText(this, "请先选择视频", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun convertVideoToGif(videoUri: Uri) {
-        conversionProgressBar.visibility = View.VISIBLE
+    private fun convertToGif(videoUri: Uri) {
+        progressBar.visibility = View.VISIBLE
+        progressBar.progress = 0
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -136,28 +154,30 @@ class MainActivity : AppCompatActivity() {
                         input.copyTo(output)
                     }
                 }
+                progressBar.progress = 30
 
                 // 创建临时输出文件
                 val outputFile = File(cacheDir, "temp_output.gif")
 
-                // FFmpeg 命令
+                // FFmpeg命令
                 val command = arrayOf(
                     "-i", inputFile.absolutePath,
-                    "-vf", "fps=10,scale=320:-1:flags=lanczos",
-                    "-y", // 覆盖已存在的文件
+                    "-vf", "fps=$fps,scale=${quality}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
+                    "-y",
                     outputFile.absolutePath
                 )
 
-                // 执行转换
                 FFmpeg.execute(command)
+                progressBar.progress = 70
 
                 // 保存到媒体库
                 saveToMediaStore(outputFile)
+                progressBar.progress = 90
 
                 withContext(Dispatchers.Main) {
-                    conversionProgressBar.visibility = View.GONE
-                    Toast.makeText(this@MainActivity, "Conversion successful!", Toast.LENGTH_SHORT).show()
-                    outputPathText.text = "GIF saved to gallery"
+                    progressBar.progress = 100
+                    progressBar.visibility = View.GONE
+                    showResultDialog(outputFile)
                 }
 
                 // 清理临时文件
@@ -166,11 +186,33 @@ class MainActivity : AppCompatActivity() {
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    conversionProgressBar.visibility = View.GONE
-                    Toast.makeText(this@MainActivity, "Conversion failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = View.GONE
+                    Toast.makeText(this@MainActivity, "转换失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
+    }
+
+    private fun requestPermissions() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            requestPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            )
+        }
+    }
+
+    private fun showResultDialog(gifFile: File) {
+        AlertDialog.Builder(this)
+            .setTitle("GIF 生成完成")
+            .setMessage("GIF已保存到相册\n文件大小: ${gifFile.length() / 1024}KB")
+            .setPositiveButton("确定") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 
     private fun saveToMediaStore(gifFile: File) {
