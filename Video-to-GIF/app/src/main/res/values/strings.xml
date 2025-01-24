@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Video-to-GIF</string>
+    <string name="bottom_status_text">底部状态栏</string>
+</resources>
