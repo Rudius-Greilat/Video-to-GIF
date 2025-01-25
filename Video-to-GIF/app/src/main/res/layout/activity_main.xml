@@ -71,7 +71,7 @@
             android:drawablePadding="-20dp"/>
 
         <Button
-            android:id="@+id/btn_image"
+            android:id="@+id/btn_album"
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_marginBottom="110dp"
