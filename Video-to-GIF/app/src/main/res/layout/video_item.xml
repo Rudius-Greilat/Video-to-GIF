@@ -14,7 +14,8 @@
         android:contentDescription="Video Thumbnail"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginEnd="30dp"
+        android:layout_marginStart="10dp"/>
 
     <!-- 视频文件名 -->
     <TextView
@@ -22,7 +23,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Video Name"
-        android:textSize="16sp"
+        android:gravity="center"
+        android:textSize="20sp"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@id/video_thumbnail"
         android:layout_marginTop="8dp"/>
@@ -30,11 +32,12 @@
     <!-- 视频选中标记 -->
     <ImageView
         android:id="@+id/checkmark"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:src="@drawable/ic_check_circle"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:layout_marginEnd="15dp"/>
 
 </RelativeLayout>

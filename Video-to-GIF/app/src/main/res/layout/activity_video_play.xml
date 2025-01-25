@@ -1,11 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <VideoView
-        android:id="@+id/video_view"
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="90dp"
+        android:translationY="-20dp"
+        android:elevation="50dp"
+        android:orientation="horizontal"
+        android:background="@drawable/square"
+        android:gravity="start"
+        android:paddingTop="5dp">
+
+        <!-- 取消按钮 -->
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:paddingTop="10dp"
+            android:background="@drawable/returnback"
+            android:layout_marginStart="10dp"/>
+        <!-- 顶部状态栏 -->
+        <TextView
+            android:id="@+id/top_status_bar"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:gravity="center"
+            android:paddingTop="20dp"
+            android:text="Video-Play"
+            android:textColor="#FFFFFF"
+            android:textSize="25sp"
+            app:layout_constraintTop_toTopOf="parent"
+            android:fontFamily="@font/fzhzgbjw"
+            android:layout_marginStart="-55dp"/>
+    </LinearLayout>
+
+
+    <!-- 中间播放区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingBottom="20dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+        <VideoView
+            android:id="@+id/video_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
 </LinearLayout>

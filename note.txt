@@ -1,0 +1,18 @@
+*解决import com.bumptech.glide.Glide报错问题
+
+//build.gradle.kts
+
+dependencies {
+    implementation("com.github.bumptech.glide:glide:4.15.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.15.0")
+}
+
+
+
+*解决android studio Button颜色默认为紫的问题
+
+/res/values/style.xml
+	parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge"
+
+/res/values/themes.xml
+	parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge"

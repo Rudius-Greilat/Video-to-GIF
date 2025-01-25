@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 class VideoSelectActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var confirmButton: Button
+    private lateinit var previewButton: Button
     private lateinit var cancelButton: Button
     private var selectedVideoUri: Uri? = null
 
@@ -27,7 +27,7 @@ class VideoSelectActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.video_select_activity) // 使用你的 video_select_activity.xml
 
-        confirmButton = findViewById(R.id.confirm_button)
+        previewButton = findViewById(R.id.preview_button)
         cancelButton = findViewById(R.id.cancel_button)
 
         // 检查并请求权限
@@ -38,8 +38,8 @@ class VideoSelectActivity : AppCompatActivity() {
             setupRecyclerView()
         }
 
-        // 点击确定返回选中的视频
-        confirmButton.setOnClickListener {
+        // 点击预览选中的视频
+        previewButton.setOnClickListener {
             if (selectedVideoUri != null) {
                 // 创建 Intent 启动播放界面，并传递视频 URI
                 val intent = Intent(this, VideoPlayActivity::class.java).apply {
@@ -50,7 +50,6 @@ class VideoSelectActivity : AppCompatActivity() {
                 Toast.makeText(this, "请先选择一个视频", Toast.LENGTH_SHORT).show()
             }
         }
-
         // 点击取消返回
         cancelButton.setOnClickListener {
             setResult(RESULT_CANCELED)
