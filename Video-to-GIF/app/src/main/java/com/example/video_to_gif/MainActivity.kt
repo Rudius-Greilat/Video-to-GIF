@@ -22,13 +22,12 @@ import java.io.File
 import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var mainLayout: LinearLayout
     private lateinit var selectVideoButton: Button
     private lateinit var convertToGifButton: Button
     private lateinit var videoPathText: TextView
     private lateinit var progressBar: ProgressBar
-
-    // 添加新的控件变量
     private lateinit var qualitySeekBar: SeekBar
     private lateinit var fpsSeekBar: SeekBar
     private lateinit var qualityText: TextView
@@ -38,27 +37,31 @@ class MainActivity : AppCompatActivity() {
     private var quality = 480 // 默认分辨率
     private var fps = 15 // 默认帧率
 
+    // Deepseek: 修改为使用相册选择视频
+    private val galleryLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val videoUri: Uri? = result.data?.data
+            videoUri?.let {
+                contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                selectedVideoUri = it
+                videoPathText.text = "已选择视频: ${DocumentFile.fromSingleUri(this, it)?.name}"
+                enableControls(true)
+            }
+        }
+    }
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.all { it.value }) {
             Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "需要存储权限才能继续", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private val videoPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-            selectedVideoUri = it
-            videoPathText.text = "已选择视频: ${DocumentFile.fromSingleUri(this, it)?.name}"
-            enableControls(true)
+            Toast.makeText(this, "权限未授予", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -99,7 +102,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 分辨率控制
         qualityText = TextView(this).apply {
             text = "分辨率: ${quality}p"
             layoutParams = LinearLayout.LayoutParams(
@@ -120,7 +122,6 @@ class MainActivity : AppCompatActivity() {
             isEnabled = false
         }
 
-        // 帧率控制
         fpsText = TextView(this).apply {
             text = "帧率: $fps fps"
             layoutParams = LinearLayout.LayoutParams(
@@ -178,8 +179,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Deepseek: 修改为使用相册选择视频
         selectVideoButton.setOnClickListener {
-            videoPickerLauncher.launch(arrayOf("video/*"))
+            openGallery()
         }
 
         convertToGifButton.setOnClickListener {
@@ -193,6 +195,7 @@ class MainActivity : AppCompatActivity() {
                 quality = if (progress < 120) 120 else progress
                 qualityText.text = "分辨率: ${quality}p"
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
@@ -202,9 +205,16 @@ class MainActivity : AppCompatActivity() {
                 fps = if (progress < 5) 5 else progress
                 fpsText.text = "帧率: $fps fps"
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+    }
+
+    // Deepseek: 新增方法，用于打开相册选择视频
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+        galleryLauncher.launch(intent)
     }
 
     private fun enableControls(enabled: Boolean) {
@@ -232,7 +242,6 @@ class MainActivity : AppCompatActivity() {
                 val command = arrayOf(
                     "-i", inputFile.absolutePath,
                     "-vf", buildFFmpegFilter(),
-                    "-y",
                     outputFile.absolutePath
                 )
 
@@ -262,9 +271,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildFFmpegFilter(): String {
         return "fps=$fps,scale=${quality}:-1:flags=lanczos," +
-                "split[s0][s1];" +
-                "[s0]palettegen=max_colors=256:stats_mode=full[p];" +
-                "[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle"
+                "split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle"
     }
 
     private fun requestPermissions() {
