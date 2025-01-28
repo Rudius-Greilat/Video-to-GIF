@@ -20,6 +20,9 @@ import com.arthenica.mobileffmpeg.FFmpeg
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
+import android.content.pm.PackageManager
+import android.provider.OpenableColumns
+import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,32 +46,58 @@ class MainActivity : AppCompatActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val videoUri: Uri? = result.data?.data
-            videoUri?.let {
-                contentResolver.takePersistableUriPermission(
-                    it,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                selectedVideoUri = it
-                videoPathText.text = "已选择视频: ${DocumentFile.fromSingleUri(this, it)?.name}"
-                enableControls(true)
+            videoUri?.let { uri ->
+                try {
+                    // 检查是否可以打开流
+                    contentResolver.openInputStream(uri)?.use {
+                        // 流可以打开，说明有读取权限
+                        selectedVideoUri = uri
+
+                        // 获取文件名
+                        val fileName = contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            cursor.moveToFirst()
+                            cursor.getString(nameIndex)
+                        } ?: "未知文件"
+
+                        videoPathText.text = "已选择视频: $fileName"
+                        enableControls(true)
+                    } ?: run {
+                        Toast.makeText(this, "无法打开所选视频文件", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("VideoSelection", "Error accessing video: ${e.message}", e)
+                    Toast.makeText(this, "访问视频失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
+    }
+
+    private fun getFileName(uri: Uri): String {
+        return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.moveToFirst()
+            cursor.getString(nameIndex)
+        } ?: "未知文件名"
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.all { it.value }) {
-            Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show()
+        val allGranted = permissions.all { it.value }
+        if (allGranted) {
+            Log.d("Permissions", "所有权限都已授予")
+            Toast.makeText(this, "已获得所需权限", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "权限未授予", Toast.LENGTH_SHORT).show()
+            Log.d("Permissions", "部分权限未授予: ${permissions.filter { !it.value }.keys}")
+            Toast.makeText(this, "某些权限未授予，可能影响应用功能", Toast.LENGTH_SHORT).show()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestPermissions()  // 先请求权限
         setupUI()
-        requestPermissions()
         setupListeners()
     }
 
@@ -213,7 +242,42 @@ class MainActivity : AppCompatActivity() {
 
     // Deepseek: 新增方法，用于打开相册选择视频
     private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_MEDIA_VIDEO
+                ) == PackageManager.PERMISSION_GRANTED) {
+                launchGalleryIntent()
+            } else {
+                requestPermissions()
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED) {
+                launchGalleryIntent()
+            } else {
+                requestPermissions()
+            }
+        }
+    }
+
+    private fun launchGalleryIntent() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI).apply {
+            type = "video/*"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        galleryLauncher.launch(intent)
+    }
+
+
+
+    private fun launchGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
         galleryLauncher.launch(intent)
     }
 
@@ -274,14 +338,24 @@ class MainActivity : AppCompatActivity() {
                 "split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle"
     }
 
+
     private fun requestPermissions() {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            requestPermissionLauncher.launch(
-                arrayOf(
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+                // Android 13 及以上
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_VIDEO))
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                // Android 11 及以上
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+            }
+            else -> {
+                // Android 10 及以下
+                requestPermissionLauncher.launch(arrayOf(
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            )
+                ))
+            }
         }
     }
 
