@@ -24,12 +24,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val selectVideoButton = findViewById<Button>(R.id.btn_album)
+        val settingsButton = findViewById<Button>(R.id.btn_settings)
 
         // 点击跳转到选择视频页面
         selectVideoButton.setOnClickListener {
             val intent = Intent(this, VideoSelectActivity::class.java)
             // 使用 videoSelectLauncher 启动 VideoSelectActivity
             videoSelectLauncher.launch(intent)
+        }
+
+        // 点击跳转到设置页面
+        settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingActivity::class.java)
+            startActivity(intent)  // 启动 SettingActivity
         }
     }
 }

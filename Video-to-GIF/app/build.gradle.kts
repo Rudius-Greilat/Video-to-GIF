@@ -72,5 +72,6 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:4.15.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.15.0")
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 
 }

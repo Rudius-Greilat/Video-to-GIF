@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="30" />
+        android:maxSdkVersion="37" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- queries 应该放在 <manifest> 中，而不是 <application> 中 -->
@@ -39,7 +39,9 @@
             <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
         </activity>
 
-
+        <activity android:name=".SettingActivity">
+            <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
+        </activity>
 
     </application>
 
