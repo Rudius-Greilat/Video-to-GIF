@@ -1,26 +1,26 @@
 package com.example.video_to_gif
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Button
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.viewModels
-import androidx.appcompat.widget.Toolbar
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.view.isVisible
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerView
-import kotlinx.coroutines.*
 import android.widget.TextView
-
+import android.view.View
+import com.arthenica.mobileffmpeg.FFmpeg
+import kotlinx.coroutines.*
+import java.io.File
+import java.io.FileOutputStream
+import android.widget.Toast
+import android.content.Intent
 
 class SettingActivity : AppCompatActivity() {
 
-    // Define UI components
     private lateinit var startTimeSlider: SeekBar
     private lateinit var endTimeSlider: SeekBar
     private lateinit var frameRateSlider: SeekBar
@@ -28,22 +28,31 @@ class SettingActivity : AppCompatActivity() {
     private lateinit var generateGifButton: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var playerView: PlayerView
+    private lateinit var cancelButton: Button
 
-    // TextViews for showing the values
     private lateinit var startTimeText: TextView
     private lateinit var endTimeText: TextView
     private lateinit var frameRateText: TextView
     private lateinit var resolutionText: TextView
 
     private var exoPlayer: ExoPlayer? = null
+    private var selectedVideoUri: Uri? = null
+    private var currentGifFile: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_setting)
 
-        // Set the layout using XML, no Compose theme applied
-        setContentView(R.layout.activity_setting)  // Use your XML layout
+        // 获取传递过来的视频URI
+        selectedVideoUri = intent.getStringExtra("VIDEO_URI")?.let { Uri.parse(it) }
 
-        // Initialize the sliders, button and text views
+        initializeViews()
+        setupPlayer()
+        setupSliders()
+        setupButtons()
+    }
+
+    private fun initializeViews() {
         startTimeSlider = findViewById(R.id.start_time_slider)
         endTimeSlider = findViewById(R.id.end_time_slider)
         frameRateSlider = findViewById(R.id.frame_rate_slider)
@@ -51,106 +60,228 @@ class SettingActivity : AppCompatActivity() {
         generateGifButton = findViewById(R.id.generate_gif_button)
         progressBar = findViewById(R.id.progress_bar)
         playerView = findViewById(R.id.playerView)
+        cancelButton = findViewById(R.id.cancel_button)
 
-        // TextViews to display values of sliders
         startTimeText = findViewById(R.id.start_time_text)
         endTimeText = findViewById(R.id.end_time_text)
         frameRateText = findViewById(R.id.frame_rate_text)
         resolutionText = findViewById(R.id.resolution_text)
-
-        // Set up ExoPlayer and sliders
-        setupPlayer()
-        setupSliders()
     }
 
     private fun setupPlayer() {
-        // Initialize ExoPlayer instance
-        exoPlayer = ExoPlayer.Builder(this).build()
-        // Load a video resource (change as needed)
-        val mediaItem = MediaItem.fromUri("android.resource://com.example.myapplication/raw/ab")
-        exoPlayer?.setMediaItem(mediaItem)
-        exoPlayer?.prepare()
-
-        // Attach player to PlayerView
+        exoPlayer = ExoPlayer.Builder(this).build().apply {
+            // 设置循环播放
+            repeatMode = Player.REPEAT_MODE_ALL
+        }
         playerView.player = exoPlayer
+
+        selectedVideoUri?.let { uri ->
+            val mediaItem = MediaItem.fromUri(uri)
+            exoPlayer?.apply {
+                setMediaItem(mediaItem)
+                prepare()
+            }
+        }
     }
 
     private fun setupSliders() {
-        // Set listener for Start Time slider
+        // 视频加载完成后设置滑杆
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) {
+                    val duration = exoPlayer?.duration ?: 0
+
+                    // 设置滑杆范围
+                    startTimeSlider.max = duration.toInt()
+                    endTimeSlider.max = duration.toInt()
+
+                    // 设置初始值
+                    startTimeSlider.progress = 0
+                    endTimeSlider.progress = duration.toInt()
+
+                    // 更新文本显示
+                    updateTimeText(startTimeText, 0)
+                    updateTimeText(endTimeText, duration)
+                }
+            }
+        })
+
+        // 开始时间滑杆监听器
         startTimeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Update start time in text view
-                startTimeText.text = "起始时间: $progress 毫秒"
+                // 只更新文本显示，不修改进度值
+                updateTimeText(startTimeText, progress.toLong())
+
+                // 更新视频位置
+                if (fromUser) {
+                    exoPlayer?.seekTo(progress.toLong())
+                }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // 在滑动结束时检查并调整位置
+                seekBar?.let {
+                    val currentProgress = it.progress
+                    val endTime = endTimeSlider.progress
+
+                    if (currentProgress > endTime) {
+                        it.progress = endTime
+                        updateTimeText(startTimeText, endTime.toLong())
+                        exoPlayer?.seekTo(endTime.toLong())
+                    }
+                }
+            }
         })
 
-        // Set listener for End Time slider
+        // 结束时间滑杆监听器
         endTimeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Update end time in text view
-                endTimeText.text = "结束时间: $progress 毫秒"
+                // 只更新文本显示，不修改进度值
+                updateTimeText(endTimeText, progress.toLong())
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // 在滑动结束时检查并调整位置
+                seekBar?.let {
+                    val currentProgress = it.progress
+                    val startTime = startTimeSlider.progress
+
+                    if (currentProgress < startTime) {
+                        it.progress = startTime
+                        updateTimeText(endTimeText, startTime.toLong())
+                    }
+                }
+            }
         })
 
-        // Set listener for Frame Rate slider
+        // 帧率滑块监听器
         frameRateSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Update frame rate in text view
-                frameRateText.text = "帧率: $progress FPS"
+                val fps = progress.coerceAtLeast(1)
+                frameRateText.text = "帧率: $fps FPS"
             }
-
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Set listener for Resolution slider
+        // 分辨率滑块监听器
         resolutionSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Update resolution in text view
-                resolutionText.text = "分辨率: ${progress}x${progress}"
+                val resolution = progress.coerceAtLeast(120)
+                resolutionText.text = "分辨率: ${resolution}p"
             }
-
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Set up Generate GIF button click action
+        // 设置初始值
+        frameRateSlider.progress = 15
+        resolutionSlider.progress = 480
+    }
+
+    // 格式化时间显示
+    private fun updateTimeText(textView: TextView, milliseconds: Long) {
+        val seconds = milliseconds / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+
+        val timeString = when {
+            hours > 0 -> String.format("%02d:%02d:%02d", hours, minutes % 60, seconds % 60)
+            else -> String.format("%02d:%02d", minutes, seconds % 60)
+        }
+
+        textView.text = timeString
+    }
+
+    private fun setupButtons() {
         generateGifButton.setOnClickListener {
-            // Show progress bar while generating GIF
-            progressBar.isVisible = true
-            generateGif()
+            convertToGif()
+        }
+
+        cancelButton.setOnClickListener {
+            finish()
         }
     }
 
-    private fun generateGif() {
-        // Example implementation for generating GIF
-        // In a real scenario, you would capture frames from ExoPlayer and create a GIF
+    private fun convertToGif() {
+        if (selectedVideoUri == null) {
+            Toast.makeText(this, "没有选择视频", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-        // Simulating the process with a delay
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(3000)  // Simulating time-consuming GIF generation process
-            progressBar.isVisible = false
-            // Notify user that the GIF is ready (for example, show a Toast or update UI)
+        progressBar.visibility = View.VISIBLE
+        generateGifButton.isEnabled = false
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 将视频文件复制到临时文件
+                val inputFile = File(cacheDir, "temp_input_video")
+                contentResolver.openInputStream(selectedVideoUri!!)?.use { input ->
+                    FileOutputStream(inputFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                val outputFile = File(cacheDir, "temp_output.gif")
+                currentGifFile = outputFile
+
+                // 获取设置的参数
+                val fps = frameRateSlider.progress.coerceAtLeast(1)
+                val resolution = resolutionSlider.progress.coerceAtLeast(120)
+
+                // 获取开始和结束时间（秒）
+                val startTime = (startTimeSlider.progress / 1000f).toString()
+                val duration = ((endTimeSlider.progress - startTimeSlider.progress) / 1000f).toString()
+
+                // 构建 FFmpeg 命令，添加时间范围参数
+                val command = arrayOf(
+                    "-ss", startTime,                    // 开始时间
+                    "-t", duration,                      // 持续时间
+                    "-i", inputFile.absolutePath,        // 输入文件
+                    "-vf", "fps=$fps,scale=$resolution:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
+                    "-y",                                // 覆盖输出文件
+                    outputFile.absolutePath              // 输出文件
+                )
+
+                // 执行转换
+                val result = FFmpeg.execute(command)
+
+                if (result == 0) { // 转换成功
+                    withContext(Dispatchers.Main) {
+                        // 跳转到新的 Activity
+                        val intent = Intent(this@SettingActivity, GifPlayActivity::class.java).apply {
+                            putExtra("GIF_PATH", outputFile.absolutePath)
+                        }
+                        startActivity(intent)
+
+                        progressBar.visibility = View.GONE
+                        generateGifButton.isEnabled = true
+                    }
+                } else {
+                    throw Exception("FFmpeg command failed with result code: $result")
+                }
+
+                // 清理临时文件
+                inputFile.delete()
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    progressBar.visibility = View.GONE
+                    generateGifButton.isEnabled = true
+                    Toast.makeText(this@SettingActivity, "转换失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
-    // Optionally, handle ExoPlayer lifecycle (start and stop)
-    override fun onStart() {
-        super.onStart()
-        exoPlayer?.play()  // Play the video when the activity starts
+    override fun onDestroy() {
+        super.onDestroy()
+        exoPlayer?.release()
+        // 清理临时 GIF 文件
+        currentGifFile?.delete()
     }
-
-    override fun onStop() {
-        super.onStop()
-        exoPlayer?.pause()  // Pause the video when the activity stops
-    }
-
-    // Optionally, handle other lifecycle methods such as onPause(), onResume(), etc.
 }
-
