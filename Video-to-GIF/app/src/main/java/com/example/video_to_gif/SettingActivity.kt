@@ -18,6 +18,7 @@ import java.io.File
 import java.io.FileOutputStream
 import android.widget.Toast
 import android.content.Intent
+import android.util.Log
 
 class SettingActivity : AppCompatActivity() {
 
@@ -38,6 +39,7 @@ class SettingActivity : AppCompatActivity() {
     private var exoPlayer: ExoPlayer? = null
     private var selectedVideoUri: Uri? = null
     private var currentGifFile: File? = null
+    private var isUserSeeking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,8 +72,8 @@ class SettingActivity : AppCompatActivity() {
 
     private fun setupPlayer() {
         exoPlayer = ExoPlayer.Builder(this).build().apply {
-            // 设置循环播放
-            repeatMode = Player.REPEAT_MODE_ALL
+            repeatMode = Player.REPEAT_MODE_OFF
+            playWhenReady = false  // 默认不自动播放
         }
         playerView.player = exoPlayer
 
@@ -80,85 +82,103 @@ class SettingActivity : AppCompatActivity() {
             exoPlayer?.apply {
                 setMediaItem(mediaItem)
                 prepare()
+
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        if (state == Player.STATE_READY && !isUserSeeking) {
+                            val duration = duration
+                            if (!isUserSeeking) {
+                                startTimeSlider.max = duration.toInt()
+                                endTimeSlider.max = duration.toInt()
+                                if (endTimeSlider.progress == 0) {
+                                    endTimeSlider.progress = duration.toInt()
+                                }
+                                if (startTimeText.text.isEmpty()) {
+                                    updateTimeText(startTimeText, 0)
+                                }
+                                if (endTimeText.text.isEmpty()) {
+                                    updateTimeText(endTimeText, duration)
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                        if (reason != Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST) {
+                            pause()
+                        }
+                    }
+                })
             }
         }
     }
 
+
     private fun setupSliders() {
-        // 视频加载完成后设置滑杆
-        exoPlayer?.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY) {
-                    val duration = exoPlayer?.duration ?: 0
+        var lastStartProgress = 0
+        var lastEndProgress = 0
 
-                    // 设置滑杆范围
-                    startTimeSlider.max = duration.toInt()
-                    endTimeSlider.max = duration.toInt()
-
-                    // 设置初始值
-                    startTimeSlider.progress = 0
-                    endTimeSlider.progress = duration.toInt()
-
-                    // 更新文本显示
-                    updateTimeText(startTimeText, 0)
-                    updateTimeText(endTimeText, duration)
-                }
-            }
-        })
-
-        // 开始时间滑杆监听器
         startTimeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // 只更新文本显示，不修改进度值
-                updateTimeText(startTimeText, progress.toLong())
+                if (!fromUser && !isUserSeeking) return
 
-                // 更新视频位置
+                val actualProgress = if (progress >= endTimeSlider.progress - 1000) {
+                    endTimeSlider.progress - 1000
+                } else {
+                    progress
+                }
+
+                lastStartProgress = actualProgress
+                seekBar?.progress = actualProgress
+                updateTimeText(startTimeText, actualProgress.toLong())
+
                 if (fromUser) {
-                    exoPlayer?.seekTo(progress.toLong())
+                    exoPlayer?.seekTo(actualProgress.toLong())
                 }
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = true
+                exoPlayer?.playWhenReady = false  // 拖动时暂停播放
+            }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                // 在滑动结束时检查并调整位置
-                seekBar?.let {
-                    val currentProgress = it.progress
-                    val endTime = endTimeSlider.progress
-
-                    if (currentProgress > endTime) {
-                        it.progress = endTime
-                        updateTimeText(startTimeText, endTime.toLong())
-                        exoPlayer?.seekTo(endTime.toLong())
-                    }
-                }
+                isUserSeeking = false
+                updateTimeText(startTimeText, lastStartProgress.toLong())
             }
         })
 
-        // 结束时间滑杆监听器
         endTimeSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // 只更新文本显示，不修改进度值
-                updateTimeText(endTimeText, progress.toLong())
+                if (!fromUser && !isUserSeeking) return
+
+                val actualProgress = if (progress <= startTimeSlider.progress + 1000) {
+                    startTimeSlider.progress + 1000
+                } else {
+                    progress
+                }
+
+                lastEndProgress = actualProgress
+                seekBar?.progress = actualProgress
+                updateTimeText(endTimeText, actualProgress.toLong())
+
+                if (fromUser) {
+                    exoPlayer?.seekTo(actualProgress.toLong())
+                }
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = true
+                exoPlayer?.playWhenReady = false  // 拖动时暂停播放
+            }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                // 在滑动结束时检查并调整位置
-                seekBar?.let {
-                    val currentProgress = it.progress
-                    val startTime = startTimeSlider.progress
-
-                    if (currentProgress < startTime) {
-                        it.progress = startTime
-                        updateTimeText(endTimeText, startTime.toLong())
-                    }
-                }
+                isUserSeeking = false
+                updateTimeText(endTimeText, lastEndProgress.toLong())
             }
         })
 
-        // 帧率滑块监听器
+        // 帧率滑块监听器保持不变
         frameRateSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val fps = progress.coerceAtLeast(1)
@@ -168,7 +188,7 @@ class SettingActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // 分辨率滑块监听器
+        // 分辨率滑块监听器保持不变
         resolutionSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val resolution = progress.coerceAtLeast(120)
@@ -185,13 +205,15 @@ class SettingActivity : AppCompatActivity() {
 
     // 格式化时间显示
     private fun updateTimeText(textView: TextView, milliseconds: Long) {
-        val seconds = milliseconds / 1000
-        val minutes = seconds / 60
+        val totalSeconds = milliseconds / 1000
+        val ms = milliseconds % 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
         val hours = minutes / 60
 
         val timeString = when {
-            hours > 0 -> String.format("%02d:%02d:%02d", hours, minutes % 60, seconds % 60)
-            else -> String.format("%02d:%02d", minutes, seconds % 60)
+            hours > 0 -> String.format("%02d:%02d:%02d.%03d", hours, minutes % 60, seconds, ms)
+            else -> String.format("%02d:%02d.%03d", minutes, seconds, ms)
         }
 
         textView.text = timeString

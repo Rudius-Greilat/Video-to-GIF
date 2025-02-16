@@ -63,13 +63,6 @@
                 android:scaleType="fitCenter" />
 
             <!-- 播放按钮（悬浮在 GIF 预览上） -->
-            <ImageView
-                android:id="@+id/playButton"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/play_circle"
-                android:contentDescription="播放"
-                android:layout_gravity="center" />
         </FrameLayout>
     </LinearLayout>
 
