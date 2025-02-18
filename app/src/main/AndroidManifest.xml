@@ -1,0 +1,53 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.video_to_gif">
+
+    <!-- 权限声明 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+
+    <!-- queries 应该放在 <manifest> 中，而不是 <application> 中 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+            <category android:name="android.intent.category.OPENABLE" />
+            <data android:mimeType="video/*" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:label="Video-to-GIF"
+        android:theme="@style/Theme.VideoToGif">
+
+        <!-- MainActivity 声明 -->
+        <activity android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".VideoSelectActivity">
+            <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
+        </activity>
+
+        <activity android:name=".VideoPlayActivity">
+            <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
+        </activity>
+
+        <activity android:name=".SettingActivity">
+            <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
+
+        </activity>
+
+        <activity android:name=".GifPlayActivity" />
+    </application>
+
+</manifest>

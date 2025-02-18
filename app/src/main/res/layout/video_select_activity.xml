@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:translationY="-20dp"
+        android:elevation="50dp"
+        android:orientation="horizontal"
+        android:background="@drawable/square"
+        android:gravity="start"
+        android:paddingTop="5dp">
+
+        <!-- 取消按钮 -->
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:paddingTop="5dp"
+            android:background="@drawable/returnback"
+            android:layout_marginStart="10dp"/>
+        <!-- 顶部状态栏 -->
+        <TextView
+            android:id="@+id/top_status_bar"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:gravity="center"
+            android:paddingTop="10dp"
+            android:text="Video-Select"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            app:layout_constraintTop_toTopOf="parent"
+            android:fontFamily="@font/fzhzgbjw"
+            android:layout_marginStart="-50dp"/>
+
+    </LinearLayout>
+
+
+    <!-- 视频列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="vertical"/>
+
+
+    <!-- 底部按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:paddingEnd="5dp">
+
+        <!-- 预览按钮 -->
+        <Button
+            android:id="@+id/preview_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/square"
+            android:text="预览"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:fontFamily="@font/fzhzgbjw"/>
+
+        <!-- 确定按钮 -->
+        <Button
+            android:id="@+id/confirm_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/square"
+            android:text="确定"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:fontFamily="@font/fzhzgbjw"
+            android:layout_marginStart="20dp"/>
+
+    </LinearLayout>
+</LinearLayout>

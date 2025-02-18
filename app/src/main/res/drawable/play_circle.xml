@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- 外圆圈 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7F83F7"
+        android:strokeWidth="3"
+        android:pathData="M24,4 A20,20 0 1,0 24,44 A20,20 0 1,0 24,4 Z"/>
+    <!-- 播放按钮 -->
+    <path
+        android:fillColor="#7F83F7"
+        android:pathData="M17,12 L17,36 L36,24 L17,12 Z"/>
+</vector>

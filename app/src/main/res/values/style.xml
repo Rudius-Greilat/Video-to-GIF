@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.VideoToGif" parent="Theme.MaterialComponents.DayNight.NoActionBar.Bridge">
+        <!-- 你可以在这里添加自定义的属性 -->
+    </style>
+</resources>
