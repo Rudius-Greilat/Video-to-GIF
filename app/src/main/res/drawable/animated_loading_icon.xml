@@ -1,8 +1,0 @@
-<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/loading_icon">
-
-    <target
-        android:name="path1"
-        android:animation="@animator/color_animation"/>
-
-</animated-vector>
