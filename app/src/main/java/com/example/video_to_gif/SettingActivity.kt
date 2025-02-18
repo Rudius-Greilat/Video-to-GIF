@@ -1,7 +1,9 @@
 package com.example.video_to_gif
 
+import android.app.Dialog
 import android.net.Uri
 import android.os.Bundle
+import android.view.Window
 import android.widget.SeekBar
 import android.widget.Button
 import android.widget.ProgressBar
@@ -18,6 +20,8 @@ import java.io.File
 import java.io.FileOutputStream
 import android.widget.Toast
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.util.Log
 
 class SettingActivity : AppCompatActivity() {
@@ -27,7 +31,6 @@ class SettingActivity : AppCompatActivity() {
     private lateinit var frameRateSlider: SeekBar
     private lateinit var resolutionSlider: SeekBar
     private lateinit var generateGifButton: Button
-    private lateinit var progressBar: ProgressBar
     private lateinit var playerView: PlayerView
     private lateinit var cancelButton: Button
 
@@ -41,6 +44,11 @@ class SettingActivity : AppCompatActivity() {
     private var currentGifFile: File? = null
     private var isUserSeeking = false
 
+    // 新增：加载对话框
+    private lateinit var progressDialog: Dialog
+    private lateinit var dialogProgressBar: ProgressBar
+    private lateinit var dialogProgressText: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setting)
@@ -52,6 +60,9 @@ class SettingActivity : AppCompatActivity() {
         setupPlayer()
         setupSliders()
         setupButtons()
+
+        // 初始化加载对话框
+        initProgressDialog()
     }
 
     private fun initializeViews() {
@@ -60,7 +71,6 @@ class SettingActivity : AppCompatActivity() {
         frameRateSlider = findViewById(R.id.frame_rate_slider)
         resolutionSlider = findViewById(R.id.resolution_slider)
         generateGifButton = findViewById(R.id.generate_gif_button)
-        progressBar = findViewById(R.id.progress_bar)
         playerView = findViewById(R.id.playerView)
         cancelButton = findViewById(R.id.cancel_button)
 
@@ -112,7 +122,6 @@ class SettingActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private fun setupSliders() {
         var lastStartProgress = 0
@@ -229,14 +238,26 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    private fun initProgressDialog() {
+        progressDialog = Dialog(this).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(R.layout.dialog_progress)
+            window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setCancelable(false)
+        }
+
+        dialogProgressBar = progressDialog.findViewById(R.id.loading_progress_bar)
+        dialogProgressText = progressDialog.findViewById(R.id.progress_text)
+    }
+
     private fun convertToGif() {
         if (selectedVideoUri == null) {
             Toast.makeText(this, "没有选择视频", Toast.LENGTH_SHORT).show()
             return
         }
 
-        progressBar.visibility = View.VISIBLE
-        generateGifButton.isEnabled = false
+        // 显示加载对话框
+        progressDialog.show()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -280,8 +301,8 @@ class SettingActivity : AppCompatActivity() {
                         }
                         startActivity(intent)
 
-                        progressBar.visibility = View.GONE
-                        generateGifButton.isEnabled = true
+                        // 隐藏加载对话框
+                        progressDialog.dismiss()
                     }
                 } else {
                     throw Exception("FFmpeg command failed with result code: $result")
@@ -292,8 +313,7 @@ class SettingActivity : AppCompatActivity() {
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    generateGifButton.isEnabled = true
+                    progressDialog.dismiss()
                     Toast.makeText(this@SettingActivity, "转换失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
