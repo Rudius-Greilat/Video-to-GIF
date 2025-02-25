@@ -22,7 +22,8 @@
 
     <application
         android:allowBackup="true"
-        android:label="Video-to-GIF"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.VideoToGif">
 
         <!-- MainActivity 声明 -->

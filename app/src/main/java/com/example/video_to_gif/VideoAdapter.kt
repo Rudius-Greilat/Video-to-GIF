@@ -21,7 +21,7 @@ class VideoAdapter(
 
     fun setSelectedPosition(position: Int) {
         val previousPosition = selectedPosition
-        selectedPosition = position
+        selectedPosition = if (position == selectedPosition) -1 else position
         notifyItemChanged(previousPosition)
         notifyItemChanged(selectedPosition)
     }
@@ -89,6 +89,8 @@ class VideoAdapter(
 
                 // 设置视频信息
                 holder.videoName.text = name
+                holder.videoDuration.text = duration
+                holder.videoSize.text = size
             }
         }
 
@@ -113,6 +115,8 @@ class VideoAdapter(
         val thumbnail: ImageView = itemView.findViewById(R.id.video_thumbnail)
         val checkmark: ImageView = itemView.findViewById(R.id.checkmark)
         val videoName: TextView = itemView.findViewById(R.id.video_name)
+        val videoDuration: TextView = itemView.findViewById(R.id.video_duration)
+        val videoSize: TextView = itemView.findViewById(R.id.video_size)
     }
 
     private fun formatFileSize(size: Long): String {
