@@ -1,5 +1,10 @@
 [versions]
 agp = "8.6.0"
+androidGifDrawable = "1.2.25"
+compiler = "4.15.0"
+exoplayer = "2.19.1"
+ffmpegKitMinGpl = "4.5"
+ffmpegMinGpl = "4.4.LTS"
 kotlin = "1.9.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -13,7 +18,13 @@ ffmpeg = "4.4"
 material = "1.6.0"
 media3CommonKtx = "1.5.1"  # 或者你想使用的版本号
 [libraries]
+android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
+exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
+ffmpeg-kit-min-gpl = { module = "com.arthenica:ffmpeg-kit-min-gpl", version.ref = "ffmpegKitMinGpl" }
+ffmpeg-min-gpl = { module = "com.arthenica:ffmpeg-min-gpl", version.ref = "ffmpegMinGpl" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "compiler" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

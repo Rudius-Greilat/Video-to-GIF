@@ -7,7 +7,7 @@
 
     <!-- 边框 -->
     <stroke
-        android:width="2dp"
+        android:width="1dp"
         android:color="#CCCCCC"/>  <!-- 你可以修改颜色 -->
 
     <!-- 内部填充背景 -->

@@ -15,6 +15,8 @@ import java.io.FileInputStream
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
+import android.content.Intent
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 
 class GifPlayActivity : AppCompatActivity() {
     companion object {
@@ -25,6 +27,7 @@ class GifPlayActivity : AppCompatActivity() {
     private lateinit var cancelButton: Button
     private lateinit var returnButton: Button
     private lateinit var saveButton: Button
+
     private var gifFile: File? = null
 
     // 权限请求
@@ -76,29 +79,39 @@ class GifPlayActivity : AppCompatActivity() {
         returnButton = findViewById(R.id.return_button)
         saveButton = findViewById(R.id.save_button)
 
+        //保存按钮：保存GIF
+        saveButton.setOnClickListener {
+            checkAndRequestPermissions()
+        }
+
+        //取消按钮：返回上一页
         cancelButton.setOnClickListener {
             finish()
         }
 
+        // 返回按钮：直接返回主页
         returnButton.setOnClickListener {
-            finish()
-        }
-
-        saveButton.setOnClickListener {
-            checkAndRequestPermissions()
+            val intnet = Intent(this,MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            startActivity(intnet)
         }
     }
 
+    // 加载 GIF 图片
+    /*2025.3.20，解决Glide图片缓存导致的显示错误问题*/
     private fun playGif() {
         gifFile?.let { file ->
             Log.d(TAG, "Loading GIF into preview")
             Glide.with(this)
                 .asGif()
                 .load(file)
+                .skipMemoryCache(true)                  // 跳过内存缓存
+                .diskCacheStrategy(DiskCacheStrategy.NONE)   // 禁止磁盘缓存
                 .into(gifPreview)
         }
     }
 
+    // 检查储存权限
     private fun checkAndRequestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // Android 10 及以上不需要请求存储权限
@@ -108,6 +121,7 @@ class GifPlayActivity : AppCompatActivity() {
             requestPermissionLauncher.launch(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE))
         }
     }
+
 
     private fun saveGifWithPermission() {
         Log.d(TAG, "Starting to save GIF")

@@ -20,13 +20,14 @@ import androidx.recyclerview.widget.RecyclerView
 
 class VideoSelectActivity : AppCompatActivity() {
     companion object {
-        private const val TAG = "VideoSelectActivity"
+        internal const val TAG = "VideoSelectActivity"
     }
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var previewButton: Button
     private lateinit var confirmButton: Button
     private lateinit var cancelButton: Button
+
     private var selectedVideoUri: Uri? = null
     private var selectedPosition: Int = -1
     private var videoAdapter: VideoAdapter? = null

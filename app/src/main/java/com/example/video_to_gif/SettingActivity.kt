@@ -13,7 +13,6 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerView
 import android.widget.TextView
-import android.view.View
 import com.arthenica.mobileffmpeg.FFmpeg
 import kotlinx.coroutines.*
 import java.io.File
@@ -22,7 +21,6 @@ import android.widget.Toast
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.util.Log
 
 class SettingActivity : AppCompatActivity() {
 
@@ -30,8 +28,10 @@ class SettingActivity : AppCompatActivity() {
     private lateinit var endTimeSlider: SeekBar
     private lateinit var frameRateSlider: SeekBar
     private lateinit var resolutionSlider: SeekBar
-    private lateinit var generateGifButton: Button
     private lateinit var playerView: PlayerView
+
+    private lateinit var generateGifButton: Button
+    private lateinit var returnButton: Button
     private lateinit var cancelButton: Button
 
     private lateinit var startTimeText: TextView
@@ -53,7 +53,7 @@ class SettingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setting)
 
-        // 获取传递过来的视频URI
+        // 获取传递过来的视频 URI
         selectedVideoUri = intent.getStringExtra("VIDEO_URI")?.let { Uri.parse(it) }
 
         initializeViews()
@@ -70,9 +70,11 @@ class SettingActivity : AppCompatActivity() {
         endTimeSlider = findViewById(R.id.end_time_slider)
         frameRateSlider = findViewById(R.id.frame_rate_slider)
         resolutionSlider = findViewById(R.id.resolution_slider)
-        generateGifButton = findViewById(R.id.generate_gif_button)
         playerView = findViewById(R.id.playerView)
+
+        generateGifButton = findViewById(R.id.generate_gif_button)
         cancelButton = findViewById(R.id.cancel_button)
+        returnButton = findViewById(R.id.return_button)
 
         startTimeText = findViewById(R.id.start_time_text)
         endTimeText = findViewById(R.id.end_time_text)
@@ -123,6 +125,7 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    // 设置滑动条，绑定参数
     private fun setupSliders() {
         var lastStartProgress = 0
         var lastEndProgress = 0
@@ -228,9 +231,17 @@ class SettingActivity : AppCompatActivity() {
         textView.text = timeString
     }
 
+
+    // 设置按钮监听器
     private fun setupButtons() {
         generateGifButton.setOnClickListener {
             convertToGif()
+        }
+
+        returnButton.setOnClickListener {
+            val intent = Intent(this,MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            startActivity(intent)
         }
 
         cancelButton.setOnClickListener {
@@ -238,6 +249,7 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    // 初始化进度框
     private fun initProgressDialog() {
         progressDialog = Dialog(this).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -250,7 +262,9 @@ class SettingActivity : AppCompatActivity() {
         dialogProgressText = progressDialog.findViewById(R.id.progress_text)
     }
 
+    // Video转换GIF
     private fun convertToGif() {
+        // 检查视频Uri
         if (selectedVideoUri == null) {
             Toast.makeText(this, "没有选择视频", Toast.LENGTH_SHORT).show()
             return
@@ -258,6 +272,15 @@ class SettingActivity : AppCompatActivity() {
 
         // 显示加载对话框
         progressDialog.show()
+
+        CoroutineScope(Dispatchers.Main).launch {
+            // 模拟进度更新，从 0% 到 100%
+            for (progress in 0..100) {
+                dialogProgressText.text = "$progress%"
+                delay(5) // 每次更新延迟 50ms，可调整
+            }
+        }
+
 
         CoroutineScope(Dispatchers.IO).launch {
             try {

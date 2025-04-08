@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         val selectVideoButton = findViewById<Button>(R.id.btn_album)
         val settingsButton = findViewById<Button>(R.id.btn_settings)
         val cameraButton = findViewById<Button>(R.id.btn_camera)
+        val cutButton = findViewById<Button>(R.id.btn_crop)
 
         // 拍摄视频
         cameraButton.setOnClickListener {
@@ -49,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         settingsButton.setOnClickListener {
             val intent = Intent(this, SettingActivity::class.java)
             startActivity(intent)  // 启动 SettingActivity
+        }
+
+        // 点击跳转到裁剪页面
+        cutButton.setOnClickListener {
+            val intent = Intent(this, GifSelectActivity::class.java)
+            startActivity(intent)
         }
     }
 }

@@ -10,18 +10,14 @@ import androidx.appcompat.app.AppCompatActivity
 class VideoPlayActivity : AppCompatActivity() {
 
     private lateinit var videoView: VideoView
-    private lateinit var cancelButton: Button  // 添加取消按钮
+    private lateinit var cancelButton: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video_play)  // 使用你的视频播放界面布局
-        cancelButton = findViewById(R.id.cancel_button)
-        // 初始化 VideoView
-        videoView = findViewById(R.id.video_view)
 
-        cancelButton.setOnClickListener {
-            videoView.stopPlayback()  // 停止视频播放
-            finish()  // 结束当前Activity
-        }
+        initViews()
+
         // 获取视频 URI 并设置给 VideoView
         val videoUriString = intent.getStringExtra("VIDEO_URI")
         val videoUri = Uri.parse(videoUriString)
@@ -34,6 +30,18 @@ class VideoPlayActivity : AppCompatActivity() {
 
         // 开始播放
         videoView.start()
+    }
+
+    private fun initViews() {
+        // 初始化 VideoView
+        videoView = findViewById(R.id.video_view)
+        cancelButton = findViewById(R.id.cancel_button)
+
+        cancelButton.setOnClickListener {
+            videoView.stopPlayback()    // 停止视频播放
+            finish()                    // 结束当前Activity
+        }
+
     }
 
     override fun onPause() {

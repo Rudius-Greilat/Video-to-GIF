@@ -70,8 +70,8 @@ dependencies {
     implementation (libs.ffmpeg.full)
     implementation (libs.material)
 
-    implementation("com.github.bumptech.glide:glide:4.15.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.15.0")
-    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
-
+    implementation(libs.glide)
+    annotationProcessor(libs.compiler)
+    implementation(libs.exoplayer)
+    implementation(libs.android.gif.drawable)
 }

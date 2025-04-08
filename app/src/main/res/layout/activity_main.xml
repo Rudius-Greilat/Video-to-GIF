@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background">
@@ -66,7 +65,7 @@
             android:textSize="20sp"
             android:fontFamily="@font/fzhzgbjw"
             app:layout_constraintWidth_percent="0.6"
-            app:layout_constraintHeight_percent="0.33"
+            app:layout_constraintHeight_percent="0.31"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -94,7 +93,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="0.7"
             android:drawableTop="@drawable/album"
-            android:drawablePadding="-5dp"/>
+            android:drawablePadding="0dp"/>
 
         <Button
             android:id="@+id/btn_settings"
@@ -115,15 +114,15 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="0.7"
             android:drawableTop="@drawable/settings"
-            android:drawablePadding="-5dp"/>
+            android:drawablePadding="0dp"/>
 
         <Button
-            android:id="@+id/btn_record"
+            android:id="@+id/btn_crop"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/square"
             android:elevation="100dp"
-            android:text="记 录"
+            android:text="裁 剪"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:fontFamily="@font/fzhzgbjw"
@@ -135,7 +134,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="0.7"
-            android:drawableTop="@drawable/records"
+            android:drawableTop="@drawable/crop"
             android:drawablePadding="0dp"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

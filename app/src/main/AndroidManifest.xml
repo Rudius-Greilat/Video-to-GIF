@@ -47,8 +47,9 @@
             <!-- 你可以选择添加一些intent-filter，或者留空表示没有特定的启动条件 -->
 
         </activity>
-
         <activity android:name=".GifPlayActivity" />
+        <activity android:name=".GifSelectActivity"/>
+        <activity android:name=".GifCropActivity"/>
     </application>
 
 </manifest>
