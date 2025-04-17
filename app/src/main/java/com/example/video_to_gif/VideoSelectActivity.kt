@@ -218,6 +218,7 @@ class VideoSelectActivity : AppCompatActivity() {
         }
     }
 
+    // 查询全部视频文件
     private fun fetchVideosFromGallery(): List<Uri> {
         val videoList = mutableListOf<Uri>()
         val projection = arrayOf(

@@ -1,5 +1,6 @@
 package com.example.video_to_gif
 
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,7 +34,7 @@ class GifAdapter(
             size.text = "${gif.size / 1024} KB"
             Glide.with(itemView.context)
                 .asGif()
-                .load(File(gif.path))
+                .load(Uri.parse(gif.uri))
                 .into(thumbnail)
 
             val isSelected = gif == selectedGif
