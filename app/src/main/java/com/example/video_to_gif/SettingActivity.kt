@@ -59,6 +59,7 @@ class SettingActivity : AppCompatActivity() {
         initializeViews()
         setupPlayer()
         setupSliders()
+        loadSettings() // 加载设置
         setupButtons()
 
         // 初始化加载对话框
@@ -235,16 +236,19 @@ class SettingActivity : AppCompatActivity() {
     // 设置按钮监听器
     private fun setupButtons() {
         generateGifButton.setOnClickListener {
+            saveSettings()
             convertToGif()
         }
 
         returnButton.setOnClickListener {
+            saveSettings()
             val intent = Intent(this,MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             startActivity(intent)
         }
 
         cancelButton.setOnClickListener {
+            saveSettings()
             finish()
         }
     }
@@ -308,10 +312,12 @@ class SettingActivity : AppCompatActivity() {
                     "-ss", startTime,                    // 开始时间
                     "-t", duration,                      // 持续时间
                     "-i", inputFile.absolutePath,        // 输入文件
-                    "-vf", "fps=$fps,scale=$resolution:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
+                    "-vf", "fps=$fps,scale=$resolution:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=full[p];[s1][p]paletteuse=dither=none:diff_mode=rectangle",
                     "-y",                                // 覆盖输出文件
                     outputFile.absolutePath              // 输出文件
                 )
+                // GIF颜色最大支持数max_color 256 -> 128
+                // 抖动算法，用于平滑颜色过渡区域 dither bayer:bayer_scale=5 -> none
 
                 // 执行转换
                 val result = FFmpeg.execute(command)
@@ -343,7 +349,35 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    private fun saveSettings() {
+        val prefs = getSharedPreferences("gif_settings", MODE_PRIVATE)
+        with(prefs.edit()) {
+            putInt("start_time", startTimeSlider.progress)
+            putInt("end_time", endTimeSlider.progress)
+            putInt("frame_rate", frameRateSlider.progress)
+            putInt("resolution", resolutionSlider.progress)
+            apply()
+        }
+    }
+
+    private fun loadSettings() {
+        val prefs = getSharedPreferences("gif_settings", MODE_PRIVATE)
+        startTimeSlider.progress = prefs.getInt("start_time", 0)
+        endTimeSlider.progress = prefs.getInt("end_time", endTimeSlider.max) // 默认设为最大值
+        frameRateSlider.progress = prefs.getInt("frame_rate", 15)
+        resolutionSlider.progress = prefs.getInt("resolution", 480)
+
+        // 更新文本显示
+        updateTimeText(startTimeText, startTimeSlider.progress.toLong())
+        updateTimeText(endTimeText, endTimeSlider.progress.toLong())
+        frameRateText.text = "帧率: ${frameRateSlider.progress.coerceAtLeast(1)} FPS"
+        resolutionText.text = "分辨率: ${resolutionSlider.progress.coerceAtLeast(120)}p"
+    }
+
+
+
     override fun onDestroy() {
+        saveSettings()
         super.onDestroy()
         exoPlayer?.release()
         // 清理临时 GIF 文件
